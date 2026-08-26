@@ -25,6 +25,8 @@ PAYMENT_ACCOUNTS = {
 STAR_PACKAGES = [
     {"amount": 50, "price": 3400},
     {"amount": 100, "price": 6800},
+    {"amount": 150, "price": 10200},
+    {"amount": 200, "price": 13600},
     {"amount": 250, "price": 17000},
     {"amount": 500, "price": 34000},
     {"amount": 1000, "price": 68000},
