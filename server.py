@@ -215,7 +215,11 @@ async def cb_order_approve(callback):
 
     await callback.answer("Processing...")
     db.set_order_status(order_id, "processing", callback.from_user.id)
-    success, message = await deliver_via_fragment_api(order)
+
+    try:
+        success, message = await deliver_via_fragment_api(order)
+    except Exception as e:
+        success, message = False, f"Unexpected error: {e}"
 
     if success:
         db.set_order_status(order_id, "fulfilled", callback.from_user.id)
@@ -225,13 +229,16 @@ async def cb_order_approve(callback):
             f"🎉 Order #{order_id} ({order['detail']}) ပို့ပေးပြီးပါပြီ! Telegram ကို စစ်ကြည့်ပါ။",
         )
     else:
-        await callback.answer(f"API failed: {message}", show_alert=True)
+        db.set_order_status(order_id, "pending", callback.from_user.id)
+        try:
+            await callback.message.edit_text(callback.message.text + f"\n\n⚠️ AUTO-DELIVER FAILED: {message}")
+        except Exception:
+            pass
         await bot.send_message(
             callback.from_user.id,
             f"⚠️ Order #{order_id} auto-deliver မအောင်မြင်ပါ: {message}\n"
             f"Manual fulfill: fragment.com ကနေ ကိုယ်တိုင်ဝယ်ပြီး /fulfill {order_id} ခေါ်ပါ",
         )
-
 
 @dp.callback_query(F.data.startswith("order_reject:"))
 async def cb_order_reject(callback):
