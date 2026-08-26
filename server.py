@@ -22,6 +22,7 @@ import json
 import logging
 
 from aiohttp import web
+import aiohttp
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command, CommandObject
 from aiogram.types import Message, WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton
@@ -145,6 +146,110 @@ async def cb_topup_reject(callback):
     await callback.answer("Rejected")
 
 
+
+import re
+import asyncio
+
+async def deliver_via_fragment_api(order: dict):
+    """
+    Delivers Stars/Premium via fragment-api.space (no API key — uses wallet seed).
+    Docs: https://fragment-api.space
+    """
+    if not config.FRAGMENT_WALLET_SEED:
+        return False, "FRAGMENT_WALLET_SEED ကို Render Environment Variables ထဲ ထားပါ"
+
+    match = re.search(r"\d+", order["detail"])
+    if not match:
+        return False, "Order detail ထဲက ဂဏန်း မတွေ့ပါ"
+    number = int(match.group())
+
+    username = order["target_username"].lstrip("@")
+
+    async with aiohttp.ClientSession() as session:
+        if order["order_type"] == "stars":
+            payload = {
+                "username": f"@{username}",
+                "amount": number,
+                "seed": config.FRAGMENT_WALLET_SEED,
+                "payment_method": "ton",
+            }
+            async with session.post(f"{config.FRAGMENT_API_BASE}/api/v1/stars/buy", json=payload, timeout=30) as resp:
+                data = await resp.json()
+                if resp.status != 200:
+                    return False, data.get("error", f"Request failed (status {resp.status})")
+                request_id = data.get("request_id")
+
+            for _ in range(20):
+                await asyncio.sleep(3)
+                async with session.get(f"{config.FRAGMENT_API_BASE}/api/v1/queue/{request_id}") as poll_resp:
+                    poll_data = await poll_resp.json()
+                    status = poll_data.get("status")
+                    if status == "success":
+                        return True, "delivered"
+                    if status == "failed":
+                        return False, poll_data.get("error", "Delivery failed")
+            return False, "Timeout — queue ထဲမှာ ကြာနေပါသေးတယ်၊ /pending ကနေ ပြန်စစ်ပါ"
+
+        else:
+            payload = {
+                "username": f"@{username}",
+                "duration": number,
+                "seed": config.FRAGMENT_WALLET_SEED,
+                "payment_method": "ton",
+            }
+            async with session.post(f"{config.FRAGMENT_API_BASE}/api/v1/premium/buy", json=payload, timeout=60) as resp:
+                data = await resp.json()
+                if resp.status == 200 and data.get("success"):
+                    return True, "delivered"
+                return False, data.get("error", f"Request failed (status {resp.status})")
+
+
+@dp.callback_query(F.data.startswith("order_approve:"))
+async def cb_order_approve(callback):
+    if callback.from_user.id not in config.ADMIN_IDS:
+        return await callback.answer("Admin only.", show_alert=True)
+    order_id = int(callback.data.split(":")[1])
+    order = db.get_order(order_id)
+    if not order or order["status"] != "pending":
+        return await callback.answer("Already handled.", show_alert=True)
+
+    await callback.answer("Processing...")
+    success, message = await deliver_via_fragment_api(order)
+
+    if success:
+        db.set_order_status(order_id, "fulfilled", callback.from_user.id)
+        await callback.message.edit_text(callback.message.text + "\n\n✅ APPROVED & DELIVERED")
+        await bot.send_message(
+            order["telegram_id"],
+            f"🎉 Order #{order_id} ({order['detail']}) ပို့ပေးပြီးပါပြီ! Telegram ကို စစ်ကြည့်ပါ။",
+        )
+    else:
+        await callback.answer(f"API failed: {message}", show_alert=True)
+        await bot.send_message(
+            callback.from_user.id,
+            f"⚠️ Order #{order_id} auto-deliver မအောင်မြင်ပါ: {message}\n"
+            f"Manual fulfill: fragment.com ကနေ ကိုယ်တိုင်ဝယ်ပြီး /fulfill {order_id} ခေါ်ပါ",
+        )
+
+
+@dp.callback_query(F.data.startswith("order_reject:"))
+async def cb_order_reject(callback):
+    if callback.from_user.id not in config.ADMIN_IDS:
+        return await callback.answer("Admin only.", show_alert=True)
+    order_id = int(callback.data.split(":")[1])
+    order = db.get_order(order_id)
+    if not order or order["status"] != "pending":
+        return await callback.answer("Already handled.", show_alert=True)
+
+    db.adjust_balance(order["telegram_id"], order["price_mmk"])
+    db.set_order_status(order_id, "rejected", callback.from_user.id)
+    await callback.message.edit_text(callback.message.text + "\n\n❌ REJECTED (refunded)")
+    await bot.send_message(
+        order["telegram_id"],
+        f"❌ Order #{order_id} ({order['detail']}) ကို Admin မှ လက်မခံနိုင်ပါ — "
+        f"{order['price_mmk']:,} Ks ကို Wallet ထဲ ပြန်ထည့်ပေးလိုက်ပါပြီ။",
+    )
+    await callback.answer("Rejected & refunded")
 @dp.message(Command("fulfill"))
 async def cmd_fulfill(message: Message, command: CommandObject):
     """Admin marks a Stars/Premium order as delivered after buying it manually on fragment.com"""
@@ -265,13 +370,18 @@ async def api_buy(request: web.Request):
     db.adjust_balance(user["id"], -price)
     order_id = db.create_order(user["id"], order_type, detail, price, target_username)
 
+    order_kb = InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="✅ Approve & Deliver", callback_data=f"order_approve:{order_id}"),
+        InlineKeyboardButton(text="❌ Reject & Refund", callback_data=f"order_reject:{order_id}"),
+    ]])
     for admin_id in config.ADMIN_IDS:
         try:
             await bot.send_message(
                 admin_id,
                 f"🆕 Order #{order_id}\n{detail} → @{target_username}\n"
                 f"Buyer: {user['id']} (@{user.get('username')})\n"
-                f"Price: {price:,} Ks\n\nFulfill on fragment.com, then run /fulfill {order_id}",
+                f"Price: {price:,} Ks",
+                reply_markup=order_kb,
             )
         except Exception as e:
             log.warning(f"Could not notify admin {admin_id}: {e}")
