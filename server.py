@@ -179,7 +179,7 @@ async def deliver_via_fragment_api(order: dict):
                     return False, data.get("error", f"Request failed (status {resp.status})")
                 request_id = data.get("request_id")
 
-            for _ in range(20):
+            for _ in range(100):  # up to ~5 minutes
                 await asyncio.sleep(3)
                 async with session.get(f"{config.FRAGMENT_API_BASE}/api/v1/queue/{request_id}") as poll_resp:
                     poll_data = await poll_resp.json()
