@@ -214,6 +214,7 @@ async def cb_order_approve(callback):
         return await callback.answer("Already handled.", show_alert=True)
 
     await callback.answer("Processing...")
+    db.set_order_status(order_id, "processing", callback.from_user.id)
     success, message = await deliver_via_fragment_api(order)
 
     if success:
