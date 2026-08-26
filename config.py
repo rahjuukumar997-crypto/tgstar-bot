@@ -3,7 +3,9 @@ import os
 # --- Bot ---
 BOT_TOKEN = os.getenv("BOT_TOKEN", "")
 ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]  # e.g. "123456,789012"
-
+# --- Fragment Stars API (fragment-api.space, no signup needed) ---
+FRAGMENT_API_BASE = "https://api.fragment-api.space"
+FRAGMENT_WALLET_SEED = os.getenv("FRAGMENT_WALLET_SEED", "")
 # --- Web App ---
 WEBAPP_URL = os.getenv("WEBAPP_URL", "https://axsu-stars-bot.onrender.com/webapp/index.html")  # must be HTTPS
 WEBHOOK_HOST = os.getenv("WEBHOOK_HOST", "https://axsu-stars-bot.onrender.com")
