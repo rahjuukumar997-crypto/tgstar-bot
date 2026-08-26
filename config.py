@@ -1,12 +1,12 @@
 import os
 
 # --- Bot ---
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8756193290:AAHOCTDURyhYrP25WblYqg_jBp7SnJrBCOI")
-ADMIN_IDS = [int(x) for x in os.getenv("6507012872").split(",") if x.strip()]  # e.g. "123456,789012"
+BOT_TOKEN = os.getenv("BOT_TOKEN", "")
+ADMIN_IDS = [int(x) for x in os.getenv("ADMIN_IDS", "").split(",") if x.strip()]  # e.g. "123456,789012"
 
 # --- Web App ---
-WEBAPP_URL = os.getenv("WEBAPP_URL", "https://nimble-sundae-3fecc8.netlify.app/index.html")  # must be HTTPS
-WEBHOOK_HOST = os.getenv("WEBHOOK_HOST", "https://nimble-sundae-3fecc8.netlify.app/index.html")
+WEBAPP_URL = os.getenv("WEBAPP_URL", "https://axsu-stars-bot.onrender.com/webapp/index.html")  # must be HTTPS
+WEBHOOK_HOST = os.getenv("WEBHOOK_HOST", "https://axsu-stars-bot.onrender.com")
 WEBHOOK_PATH = "/webhook"
 WEB_SERVER_HOST = "0.0.0.0"
 WEB_SERVER_PORT = int(os.getenv("PORT", 8080))
