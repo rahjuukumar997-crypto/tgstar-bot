@@ -46,7 +46,7 @@ db.init_db()
 async def cmd_myid(message: Message):
     await message.answer(
         f"Your ID: {message.from_user.id}\n"
-        f"ADMIN_IDS in config: {config.6507012872}"
+        f"ADMIN_IDS in config: {config.ADMIN_IDS}"
     )
 @dp.message(Command("rawenv")) 
 async def cmd_rawenv(message: Message):
