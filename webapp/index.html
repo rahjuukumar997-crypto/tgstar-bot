@@ -92,6 +92,16 @@
     border-radius:12px; font-size:13px; font-weight:600; transition:transform .25s ease; z-index:50;
     box-shadow:0 8px 24px rgba(0,0,0,.4); max-width:90%; text-align:center; }
   .toast.show{ transform:translateX(-50%) translateY(0); }
+  .support-btn {
+  position: fixed; bottom: 90px; right: 18px; z-index: 40;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: linear-gradient(145deg, #4facfe, #2563eb);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,.4);
+  cursor: pointer; border: none;
+}
+.support-btn:active { transform: scale(0.92); }
+.support-btn svg { width: 26px; height: 26px; }
 </style>
 </head>
 <body>
@@ -166,6 +176,14 @@
   </div>
 
   <div class="toast" id="toast"></div>
+  <button class="support-btn" onclick="openSupport()">
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M4 13V11C4 6.58 7.58 3 12 3C16.42 3 20 6.58 20 11V13" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+    <rect x="2.5" y="13" width="5" height="7" rx="2" fill="white"/>
+    <rect x="16.5" y="13" width="5" height="7" rx="2" fill="white"/>
+    <path d="M19 20C19 21.1 18.1 22 17 22H14" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  </svg>
+</button>
 </div>
 
 <script>
@@ -349,8 +367,17 @@
       showToast(data.error || 'မအောင်မြင်ပါ');
     }
   }
+function openSupport(){
+  const supportUsername = "STZN_167";
+  if (tg && tg.openTelegramLink) {
+    tg.openTelegramLink("https://t.me/" + supportUsername);
+  } else {
+    window.open("https://t.me/" + supportUsername, '_blank');
+  }
+}
 
 renderStars(); renderPlans(); renderMethods(); loadBalance();
+switchTab('stars');
 switchTab('stars');
 </script>
 </body>
