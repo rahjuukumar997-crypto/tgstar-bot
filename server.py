@@ -175,7 +175,7 @@ async def deliver_via_fragment_api(order: dict):
             }
             async with session.post(f"{config.FRAGMENT_API_BASE}/api/v1/stars/buy", json=payload, timeout=30) as resp:
                 data = await resp.json()
-                if resp.status != 200:
+                if resp.status not in (200, 202):
                     return False, data.get("error", f"Request failed (status {resp.status})")
                 request_id = data.get("request_id")
 
