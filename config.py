@@ -2,7 +2,7 @@ import os
 
 # --- Bot ---
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8756193290:AAHOCTDURyhYrP25WblYqg_jBp7SnJrBCOI")
-ADMIN_IDS = [int(x) for x in os.getenv("6507012872", "").split(",") if x.strip()]  # e.g. "123456,789012"
+ADMIN_IDS = [int(x) for x in os.getenv("6507012872").split(",") if x.strip()]  # e.g. "123456,789012"
 
 # --- Web App ---
 WEBAPP_URL = os.getenv("WEBAPP_URL", "https://nimble-sundae-3fecc8.netlify.app/index.html")  # must be HTTPS
