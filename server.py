@@ -48,7 +48,7 @@ async def cmd_myid(message: Message):
         f"Your ID: {message.from_user.id}\n"
         f"ADMIN_IDS in config: {config.ADMIN_IDS}"
     )
-  @dp.message(Command("rawenv"))
+@dp.message(Command("rawenv")) 
 async def cmd_rawenv(message: Message):
     import os
     raw = os.getenv("ADMIN_IDS")
