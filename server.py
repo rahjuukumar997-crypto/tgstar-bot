@@ -42,7 +42,12 @@ db.init_db()
 # ---------------------------------------------------------------------------
 # Bot handlers
 # ---------------------------------------------------------------------------
-
+@dp.message(Command("myid"))
+async def cmd_myid(message: Message):
+    await message.answer(
+        f"Your ID: {message.from_user.id}\n"
+        f"ADMIN_IDS in config: {config.ADMIN_IDS}"
+    )
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
     db.get_or_create_user(message.from_user.id, message.from_user.username)
